@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bolão Copa 2026 v3 — Elo + Poisson + Odds</title>
+<style>
+:root{
+  --pitch:#0A2E1C; --card:#0E3B23; --line:#2C5A3E; --line2:#3E6B4F;
+  --chalk:#F4F2E9; --muted:#9DBFA8; --soft:#C9DCCF; --gold:#F5B82E;
+  --red:#D94F30; --blue:#5BA8D4; --green:#67C587; --amber:#D8A72D;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pitch);color:var(--chalk);font-family:"Space Grotesk","Segoe UI",system-ui,sans-serif;padding:24px 14px 64px}
+.wrap{max-width:980px;margin:0 auto}
+header{text-align:center;margin-bottom:22px}
+.eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:"Arial Black","Impact",sans-serif;font-size:clamp(30px,7vw,52px);letter-spacing:0;margin:6px 0 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px;margin-bottom:16px}
+.ctitle{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.pts-row{display:flex;gap:14px;flex-wrap:wrap}
+.pts-row label{display:flex;flex-direction:column;gap:6px;flex:1 1 120px;font-size:13px;color:var(--soft)}
+input[type=number],select{background:var(--pitch);color:var(--chalk);border:1px solid var(--line2);border-radius:8px;padding:9px 10px;font-size:15px;font-family:inherit;width:100%}
+select{min-height:38px}
+input:focus,select:focus,button:focus,details summary:focus{outline:2px solid var(--gold);outline-offset:2px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tab{background:var(--card);border:1px solid var(--line);color:var(--soft);border-radius:8px;padding:8px 13px;font-family:inherit;font-size:14px;cursor:pointer}
+.tab.on{background:var(--gold);color:#0B1F14;font-weight:700;border-color:var(--gold)}
+.game{border-top:1px dashed var(--line);padding:16px 0}
+.game:first-of-type{border-top:none;padding-top:0}
+.game-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px}
+.gdate{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.gtop{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center}
+.tname{font-size:15px;min-width:0;overflow-wrap:anywhere}
+.tname.left{text-align:right}
+.tsub{font-size:11px;color:var(--muted);margin-top:3px}
+.home-tag{display:inline-block;margin-left:5px;color:var(--gold);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.score-wrap{text-align:center}
+.score{font-family:"Arial Black","Impact",sans-serif;font-size:24px;color:var(--gold);white-space:nowrap;padding:2px 10px;background:var(--pitch);border:1px solid var(--line2);border-radius:8px;text-align:center;min-width:82px}
+.score.odds{color:var(--blue);border-color:var(--blue)}
+.source-note{font-size:11px;color:var(--muted);margin-top:4px}
+.pick-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:8px;margin-top:12px;overflow:hidden}
+.pick-line{padding:9px 11px;background:rgba(10,46,28,.42)}
+.pick-line+.pick-line{border-left:1px solid var(--line)}
+.pick-line span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.pick-line b{font-size:17px;color:var(--chalk)}
+.probs{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:10px;background:rgba(244,242,233,.12)}
+.probs div{height:100%}
+.plegend,.prob-line{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45}
+.prob-box{margin-top:8px}
+.prob-title{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px}
+.alerts{display:none;margin-top:8px;font-size:12px;color:#F7D6CD;line-height:1.45}
+.alerts.on{display:block}
+.adv{margin-top:10px}
+.adv summary{cursor:pointer;font-size:12px;color:var(--soft)}
+.adv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-top:10px}
+.adv-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted)}
+.adv-grid input,.adv-grid select{padding:6px 8px;font-size:14px}
+.badge,.risk{display:inline-flex;align-items:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:4px}
+.badge.odds{background:var(--blue);color:#0B1F14}
+.badge.defl{background:var(--red);color:var(--chalk)}
+.badge.context{background:rgba(244,242,233,.12);color:var(--soft);border:1px solid var(--line)}
+.risk.low{background:rgba(103,197,135,.18);color:#BCE8C9;border:1px solid rgba(103,197,135,.45)}
+.risk.medium{background:rgba(216,167,45,.18);color:#F1D68A;border:1px solid rgba(216,167,45,.45)}
+.risk.high{background:rgba(217,79,48,.18);color:#F7B4A3;border:1px solid rgba(217,79,48,.5)}
+.elo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.elo-grid label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--soft);background:var(--pitch);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.elo-grid input{width:70px;color:var(--gold);font-weight:700;padding:5px 7px}
+details.cfg summary{cursor:pointer;font-size:13px;color:var(--soft);padding:4px 0}
+.foot{font-size:12px;color:var(--muted);line-height:1.55;margin-top:10px}
+.help-list{margin:8px 0 0 18px;padding:0}
+.help-list li{margin:3px 0}
+@media (max-width:640px){
+  body{padding-inline:10px}
+  .gtop{gap:7px}
+  .score{font-size:20px;min-width:72px}
+  .pick-list{grid-template-columns:1fr}
+  .pick-line+.pick-line{border-left:none;border-top:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Copa do Mundo 2026 · 1ª fase · Elo + Poisson + Odds · v3</div>
+  <h1>Bolão — Palpites</h1>
+</header>
+
+<div class="card">
+  <div class="ctitle">Pontuação do bolão e parâmetros do modelo</div>
+  <div class="pts-row">
+    <label>Placar exato <input type="number" id="pE" value="10" min="0"></label>
+    <label>Vencedor + saldo <input type="number" id="pS" value="7" min="0"></label>
+    <label>Só o vencedor <input type="number" id="pV" value="5" min="0"></label>
+    <label>Mando (Elo) <input type="number" id="pH" value="80" min="0"></label>
+    <label>Gols/jogo esperados <input type="number" id="pT" value="2.3" step="0.1" min="1"></label>
+  </div>
+</div>
+
+<div class="card">
+  <details class="cfg">
+    <summary>Ajustar ratings Elo base (confira em eloratings.net)</summary>
+    <div class="elo-grid" id="eloGrid" style="margin-top:12px"></div>
+  </details>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="card">
+  <div class="ctitle" id="gTitle"></div>
+  <div id="games"></div>
+  <div class="foot">
+    Barra: <span style="color:var(--gold)">■</span> vitória mandante · <span style="color:#6FA383">■</span> empate · <span style="color:var(--red)">■</span> vitória visitante.<br>
+    <b>Deflator</b>: 100 = força total. Cada ponto abaixo de 100 reduz 20 pontos Elo só naquele jogo, em vez de multiplicar o Elo inteiro. Faixa válida: 80–100 (valores fora disso são ignorados).<br>
+    <b>Odds</b>: cole as cotações decimais (1 / X / 2). Quando preenchidas, o palpite principal vem do mercado, sem a margem da casa, e o Elo continua aparecendo para comparação.<br>
+    <b>Use deflator com parcimônia.</b> Se a notícia já é pública, as odds provavelmente já capturaram melhor esse efeito.
+    <div style="margin-top:10px;color:var(--soft)">Como usar:</div>
+    <ol class="help-list">
+      <li>Use o palpite seguro como padrão.</li>
+      <li>Use odds nos jogos parelhos ou perto do horário do jogo.</li>
+      <li>Use deflator só quando a informação ainda não estiver refletida nas odds.</li>
+      <li>Na 3ª rodada, ajuste o contexto do jogo antes de confiar no Elo puro.</li>
+      <li>Em jogos de alto risco, considere o palpite conservador ou empate 1 x 1.</li>
+    </ol>
+    <div style="margin-top:10px">Seus ajustes (Elo, odds, deflatores e contexto) ficam salvos neste navegador.</div>
+    <button id="resetAll" class="tab" style="margin-top:10px">Limpar ajustes salvos</button>
+  </div>
+</div>
+
+<script>
+const ELO = {
+"México":1850,"Coreia do Sul":1780,"África do Sul":1615,"R. Tcheca":1760,
+"Canadá":1780,"Bósnia":1645,"Qatar":1555,"Suíça":1840,
+"Brasil":2030,"Marrocos":1895,"Escócia":1700,"Haiti":1480,
+"EUA":1840,"Paraguai":1740,"Austrália":1750,"Turquia":1850,
+"Alemanha":1975,"Curaçao":1470,"C. do Marfim":1730,"Equador":1875,
+"Holanda":2000,"Japão":1885,"Suécia":1750,"Tunísia":1690,
+"Bélgica":1900,"Egito":1685,"Irã":1790,"N. Zelândia":1505,
+"Espanha":2170,"Cabo Verde":1545,"A. Saudita":1620,"Uruguai":1940,
+"França":2070,"Senegal":1800,"Iraque":1615,"Noruega":1855,
+"Argentina":2150,"Argélia":1745,"Áustria":1820,"Jordânia":1550,
+"Portugal":2010,"RD. Congo":1610,"Uzbequistão":1635,"Colômbia":1950,
+"Inglaterra":2050,"Croácia":1925,"Gana":1655,"Panamá":1640};
+const HOSTS = new Set(["México","EUA","Canadá"]);
+const GRUPOS = {
+A:[["11.jun","México","África do Sul"],["11.jun","Coreia do Sul","R. Tcheca"],["18.jun","R. Tcheca","África do Sul"],["18.jun","México","Coreia do Sul"],["24.jun","R. Tcheca","México"],["24.jun","África do Sul","Coreia do Sul"]],
+B:[["12.jun","Canadá","Bósnia"],["13.jun","Qatar","Suíça"],["18.jun","Suíça","Bósnia"],["18.jun","Canadá","Qatar"],["24.jun","Suíça","Canadá"],["24.jun","Bósnia","Qatar"]],
+C:[["13.jun","Brasil","Marrocos"],["13.jun","Haiti","Escócia"],["19.jun","Escócia","Marrocos"],["19.jun","Brasil","Haiti"],["24.jun","Escócia","Brasil"],["24.jun","Marrocos","Haiti"]],
+D:[["12.jun","EUA","Paraguai"],["14.jun","Austrália","Turquia"],["20.jun","Turquia","Paraguai"],["19.jun","EUA","Austrália"],["25.jun","Turquia","EUA"],["25.jun","Paraguai","Austrália"]],
+E:[["14.jun","Alemanha","Curaçao"],["14.jun","C. do Marfim","Equador"],["20.jun","Alemanha","C. do Marfim"],["20.jun","Equador","Curaçao"],["25.jun","Equador","Alemanha"],["25.jun","Curaçao","C. do Marfim"]],
+F:[["14.jun","Holanda","Japão"],["14.jun","Suécia","Tunísia"],["20.jun","Tunísia","Japão"],["20.jun","Holanda","Suécia"],["25.jun","Tunísia","Holanda"],["25.jun","Japão","Suécia"]],
+G:[["15.jun","Bélgica","Egito"],["15.jun","Irã","N. Zelândia"],["21.jun","Bélgica","Irã"],["21.jun","N. Zelândia","Egito"],["27.jun","N. Zelândia","Bélgica"],["27.jun","Egito","Irã"]],
+H:[["15.jun","Espanha","Cabo Verde"],["15.jun","A. Saudita","Uruguai"],["21.jun","Espanha","A. Saudita"],["21.jun","Uruguai","Cabo Verde"],["26.jun","Uruguai","Espanha"],["26.jun","Cabo Verde","A. Saudita"]],
+I:[["16.jun","França","Senegal"],["16.jun","Iraque","Noruega"],["22.jun","França","Iraque"],["22.jun","Noruega","Senegal"],["26.jun","Noruega","França"],["26.jun","Senegal","Iraque"]],
+J:[["16.jun","Argentina","Argélia"],["17.jun","Áustria","Jordânia"],["22.jun","Argentina","Áustria"],["23.jun","Jordânia","Argélia"],["27.jun","Jordânia","Argentina"],["27.jun","Argélia","Áustria"]],
+K:[["17.jun","Portugal","RD. Congo"],["17.jun","Uzbequistão","Colômbia"],["23.jun","Portugal","Uzbequistão"],["23.jun","Colômbia","RD. Congo"],["27.jun","Colômbia","Portugal"],["27.jun","RD. Congo","Uzbequistão"]],
+L:[["17.jun","Inglaterra","Croácia"],["17.jun","Gana","Panamá"],["23.jun","Inglaterra","Gana"],["23.jun","Panamá","Croácia"],["27.jun","Panamá","Inglaterra"],["27.jun","Croácia","Gana"]]};
+
+const CONTEXTS = [
+  ["normal","Normal"],
+  ["a_classificado","Time A já classificado"],
+  ["b_classificado","Time B já classificado"],
+  ["ambos_classificados","Ambos já classificados"],
+  ["a_precisa_vencer","Time A precisa vencer"],
+  ["b_precisa_vencer","Time B precisa vencer"],
+  ["ambos_precisam_vencer","Ambos precisam vencer"],
+  ["jogo_morto","Jogo morto / baixa motivação"],
+  ["escalacao_incerta","Escalação incerta"]
+];
+
+const gameState = {};
+const DEFAULT_GAME = {defA:100, defB:100, o1:"", oX:"", o2:"", context:"normal"};
+const gid = (g,i) => g+"-"+i;
+const getSt = id => gameState[id] || (gameState[id] = {...DEFAULT_GAME});
+
+let grupoAtivo = "A";
+let renderedGames = []; // jogos do grupo ativo, para atualização em-place
+const MAXG = 10;   // teto de gols da matriz Poisson
+const MAXPICK = 5; // teto de gols dos palpites sugeridos
+const FACT = [1];
+for(let i=1;i<=MAXG;i++) FACT[i] = FACT[i-1]*i;
+const pois = (k,l) => Math.exp(-l)*Math.pow(l,k)/FACT[k];
+const sgn = x => x>0?1:x<0?-1:0;
+const cl = x => Math.min(4.5,Math.max(0.2,x));
+const $ = id => document.getElementById(id);
+
+function params(){
+  return {pE:+$("pE").value||0,pS:+$("pS").value||0,pV:+$("pV").value||0,pH:+$("pH").value||0,T:+$("pT").value||2.3};
+}
+
+function contextAdjustment(context) {
+  const result = {eloDeltaA:0, eloDeltaB:0, totalGoalsDelta:0, alert:""};
+  switch (context) {
+    case "a_classificado":
+      result.eloDeltaA = -60;
+      result.alert = "Time A pode poupar titulares.";
+      break;
+    case "b_classificado":
+      result.eloDeltaB = -60;
+      result.alert = "Time B pode poupar titulares.";
+      break;
+    case "ambos_classificados":
+      result.eloDeltaA = -40;
+      result.eloDeltaB = -40;
+      result.totalGoalsDelta = -0.15;
+      result.alert = "Jogo pode ter menor intensidade.";
+      break;
+    case "a_precisa_vencer":
+      result.eloDeltaA = 20;
+      result.totalGoalsDelta = 0.10;
+      break;
+    case "b_precisa_vencer":
+      result.eloDeltaB = 20;
+      result.totalGoalsDelta = 0.10;
+      break;
+    case "ambos_precisam_vencer":
+      result.totalGoalsDelta = 0.15;
+      break;
+    case "jogo_morto":
+      result.totalGoalsDelta = -0.20;
+      result.alert = "Baixa motivação esperada.";
+      break;
+    case "escalacao_incerta":
+      result.alert = "Escalação incerta: prefira odds próximas do jogo.";
+      break;
+  }
+  return result;
+}
+
+// Valores vazios, parciais (digitação) ou fora de 80–100 contam como força total.
+function normDeflator(v) {
+  const n = +v;
+  return Number.isFinite(n) && n >= 80 && n <= 100 ? n : 100;
+}
+
+function adjustedElo(teamName, deflator, hostBonus = 0, contextDelta = 0) {
+  const penalty = (100 - normDeflator(deflator)) * 20;
+  return ELO[teamName] - penalty + hostBonus + contextDelta;
+}
+
+function matrix(la,lb){
+  const M=[];
+  for(let i=0;i<=MAXG;i++){
+    M[i]=[];
+    for(let j=0;j<=MAXG;j++) M[i][j]=pois(i,la)*pois(j,lb);
+  }
+  return M;
+}
+
+function wdl(M){
+  let home=0, draw=0, away=0;
+  for(let i=0;i<=MAXG;i++){
+    for(let j=0;j<=MAXG;j++){
+      const p=M[i][j];
+      if(i>j) home+=p;
+      else if(i===j) draw+=p;
+      else away+=p;
+    }
+  }
+  return {home, draw, away};
+}
+
+function bestPick(M,pE,pS,pV){
+  let best=null;
+  for(let x=0;x<=MAXPICK;x++){
+    for(let y=0;y<=MAXPICK;y++){
+      let ev=0;
+      for(let i=0;i<=MAXG;i++){
+        for(let j=0;j<=MAXG;j++){
+          const p=M[i][j];
+          if(i===x&&j===y) ev+=p*pE;
+          else if(i-j===x-y) ev+=p*pS;
+          else if(sgn(i-j)===sgn(x-y)) ev+=p*pV;
+        }
+      }
+      if(!best||ev>best.ev) best={x,y,ev};
+    }
+  }
+  return best;
+}
+
+function marketProbabilitiesFromOdds(o1,oX,o2) {
+  const p = [1 / o1, 1 / oX, 1 / o2];
+  const s = p[0] + p[1] + p[2];
+  return {home:p[0] / s, draw:p[1] / s, away:p[2] / s};
+}
+
+function compareEloVsOdds(probElo, probOdds) {
+  const maxDiff = Math.max(
+    Math.abs(probElo.home - probOdds.home),
+    Math.abs(probElo.draw - probOdds.draw),
+    Math.abs(probElo.away - probOdds.away)
+  );
+  return {maxDiff, hasAlert:maxDiff >= 0.10};
+}
+
+function riskLevel(probs, oddsComparison, context) {
+  const favorite = Math.max(probs.home, probs.draw, probs.away);
+  let index = favorite >= 0.65 ? 0 : favorite >= 0.50 ? 1 : 2;
+  if (oddsComparison?.hasAlert) index += 1;
+  if (context === "escalacao_incerta") index += 1;
+  index = Math.min(index, 2);
+  return [
+    {label:"baixo", cls:"low"},
+    {label:"médio", cls:"medium"},
+    {label:"alto", cls:"high"}
+  ][index];
+}
+
+// Odds 1X2 -> lambdas: busca (total, skew) que melhor reproduz as probabilidades do mercado.
+function lambdasFromOdds(o1,oX,o2){
+  const target = marketProbabilitiesFromOdds(o1,oX,o2);
+  let best=null;
+  for(let ti=14;ti<=40;ti++){
+    const T=ti/10;
+    for(let si=-50;si<=50;si++){
+      const sk=si/50;
+      const la=cl(T/2*Math.pow(10,sk));
+      const lb=cl(T/2*Math.pow(10,-sk));
+      const probs=wdl(matrix(la,lb));
+      const err=(probs.home-target.home)**2+(probs.draw-target.draw)**2+(probs.away-target.away)**2;
+      if(!best||err<best.err) best={la,lb,err};
+    }
+  }
+  return best;
+}
+
+function modelFromLambdas(la, lb, pE, pS, pV) {
+  const M = matrix(la, lb);
+  return {M, probs:wdl(M), best:bestPick(M,pE,pS,pV)};
+}
+
+function eloModel(a,b,st) {
+  const {pE,pS,pV,pH,T} = params();
+  const context = contextAdjustment(st.context);
+  const totalGoals = Math.max(1.2, Math.min(4.0, T + context.totalGoalsDelta));
+  const ea = adjustedElo(a, st.defA, HOSTS.has(a)?pH:0, context.eloDeltaA);
+  const eb = adjustedElo(b, st.defB, HOSTS.has(b)?pH:0, context.eloDeltaB);
+  const dr = ea - eb;
+  const la = cl(totalGoals/2*Math.pow(10,dr/850));
+  const lb = cl(totalGoals/2*Math.pow(10,-dr/850));
+  return {...modelFromLambdas(la,lb,pE,pS,pV), la, lb, adjustedA:ea, adjustedB:eb, context, totalGoals};
+}
+
+function favoriteSign(probs) {
+  const entries = [{s:1,p:probs.home},{s:0,p:probs.draw},{s:-1,p:probs.away}];
+  entries.sort((a,b)=>b.p-a.p);
+  return entries[0].s;
+}
+
+function aggressivePick(M, favSign, safePick, probs) {
+  if (favSign === 0) return {x:1, y:1};
+  const favoriteProb = Math.max(probs.home, probs.draw, probs.away);
+  const candidates = [];
+  for(let x=0;x<=MAXPICK;x++){
+    for(let y=0;y<=MAXPICK;y++){
+      if (sgn(x-y) !== favSign) continue;
+      if (Math.abs(x-y) > 3) continue;
+      if (favoriteProb < 0.75 && (x > 4 || y > 4)) continue;
+      candidates.push({x,y,p:M[x][y]});
+    }
+  }
+  candidates.sort((a,b)=>b.p-a.p);
+  const top = candidates[0];
+  if (!top) return safePick;
+  const distinct = candidates.slice(1,4).filter(c => c.x!==safePick.x || c.y!==safePick.y);
+  const alternative = distinct.find(c => c.p >= top.p * 0.45) || distinct[0];
+  if (top.x!==safePick.x || top.y!==safePick.y) return alternative && alternative.p >= top.p * 0.45 ? alternative : top;
+  return alternative || top;
+}
+
+function conservativePick(probs) {
+  const favorite = Math.max(probs.home, probs.draw, probs.away);
+  if (probs.draw === favorite) return {x:1, y:1};
+  if (probs.home === favorite) return favorite >= 0.60 ? {x:2, y:0} : {x:1, y:0};
+  return favorite >= 0.60 ? {x:0, y:2} : {x:0, y:1};
+}
+
+function calcGame(a,b,st){
+  const {pE,pS,pV} = params();
+  const elo = eloModel(a,b,st);
+  const odds = [+st.o1,+st.oX,+st.o2];
+  const useOdds = odds.every(v => Number.isFinite(v) && v > 1);
+  let main = elo;
+  let oddsProbs = null;
+  let oddsComparison = null;
+  let fonte = "elo";
+  if (useOdds) {
+    const market = lambdasFromOdds(odds[0],odds[1],odds[2]);
+    main = modelFromLambdas(market.la, market.lb, pE, pS, pV);
+    oddsProbs = marketProbabilitiesFromOdds(odds[0],odds[1],odds[2]);
+    main.probs = oddsProbs;
+    oddsComparison = compareEloVsOdds(elo.probs, oddsProbs);
+    fonte = "odds";
+  }
+  const safe = main.best;
+  const conservative = conservativePick(main.probs);
+  const aggressive = aggressivePick(main.M, favoriteSign(main.probs), safe, main.probs);
+  const risk = riskLevel(main.probs, oddsComparison, st.context);
+  return {fonte, elo, oddsProbs, oddsComparison, main, safe, conservative, aggressive, risk};
+}
+
+function scoreText(pick){ return `${pick.x} × ${pick.y}`; }
+function pct(v){ return `${(v*100).toFixed(0)}%`; }
+function pp(v){ return `${Math.round(v*100)} p.p.`; }
+function contextLabel(value){ return (CONTEXTS.find(c => c[0]===value) || CONTEXTS[0])[1]; }
+function contextOptions(selected){
+  return CONTEXTS.map(([value,label]) => `<option value="${value}"${value===selected?" selected":""}>${label}</option>`).join("");
+}
+function probLine(a,b,probs){
+  return `${a} ${pct(probs.home)} · empate ${pct(probs.draw)} · ${b} ${pct(probs.away)}`;
+}
+function eloText(base, adjusted){
+  const b = Math.round(base);
+  const a = Math.round(adjusted);
+  return b === a ? `Elo ${b}` : `Elo ${b} → ${a}`;
+}
+function homeTag(team){ return HOSTS.has(team) ? '<span class="home-tag">Casa</span>' : ""; }
+
+function renderTabs(){
+  const t=$("tabs");
+  t.innerHTML="";
+  for(const g of Object.keys(GRUPOS)){
+    const b=document.createElement("button");
+    b.className="tab"+(g===grupoAtivo?" on":"");
+    b.textContent="Grupo "+g;
+    b.onclick=()=>{grupoAtivo=g; renderTabs(); renderGames();};
+    t.appendChild(b);
+  }
+}
+
+function renderGames(){
+  $("gTitle").textContent="Grupo "+grupoAtivo+" — palpites recomendados";
+  const box=$("games");
+  box.innerHTML="";
+  renderedGames=[];
+  GRUPOS[grupoAtivo].forEach(([data,a,b],i)=>{
+    const id=gid(grupoAtivo,i);
+    const st=getSt(id);
+    const d=document.createElement("div");
+    d.className="game";
+    d.innerHTML=`
+      <div class="game-meta">
+        <span class="gdate">${data} · Grupo ${grupoAtivo}</span>
+        <span class="risk"></span>
+        <span class="badges"></span>
+      </div>
+      <div class="gtop">
+        <div class="tname left"><span>${a}</span>${homeTag(a)}<div class="tsub team-a-elo"></div></div>
+        <div class="score-wrap">
+          <div class="score"></div>
+          <div class="source-note"></div>
+        </div>
+        <div class="tname"><span>${b}</span>${homeTag(b)}<div class="tsub team-b-elo"></div></div>
+      </div>
+      <div class="pick-list">
+        <div class="pick-line"><span>Palpite seguro</span><b class="pick-safe"></b></div>
+        <div class="pick-line"><span>Conservador</span><b class="pick-conservative"></b></div>
+        <div class="pick-line"><span>Agressivo</span><b class="pick-aggressive"></b></div>
+      </div>
+      <div class="probs">
+        <div class="prob-home" style="background:var(--gold)"></div>
+        <div class="prob-draw" style="background:#6FA383"></div>
+        <div class="prob-away" style="background:var(--red)"></div>
+      </div>
+      <div class="plegend"></div>
+      <div class="prob-box">
+        <div class="prob-title">Probabilidades</div>
+        <div class="prob-line prob-odds"></div>
+        <div class="prob-line prob-elo"></div>
+      </div>
+      <div class="alerts"></div>
+      <details class="adv">
+        <summary>Deflator, odds e contexto deste jogo</summary>
+        <div class="adv-grid">
+          <label>Deflator ${a} (%)<input type="number" data-f="defA" value="${st.defA}" min="80" max="100"></label>
+          <label>Deflator ${b} (%)<input type="number" data-f="defB" value="${st.defB}" min="80" max="100"></label>
+          <label>Odd 1 (${a})<input type="number" data-f="o1" value="${st.o1}" step="0.01" min="1" placeholder="ex 1.85"></label>
+          <label>Odd X (empate)<input type="number" data-f="oX" value="${st.oX}" step="0.01" min="1" placeholder="ex 3.40"></label>
+          <label>Odd 2 (${b})<input type="number" data-f="o2" value="${st.o2}" step="0.01" min="1" placeholder="ex 4.20"></label>
+          <label>Contexto do jogo<select data-f="context">${contextOptions(st.context)}</select></label>
+        </div>
+      </details>`;
+    d.querySelectorAll("input[data-f]").forEach(inp=>{
+      inp.addEventListener("input",()=>{
+        st[inp.dataset.f]=inp.value==="" ? "" : +inp.value;
+        updateGameView(d,a,b,id);
+        saveState();
+      });
+    });
+    d.querySelector("select[data-f]").addEventListener("change",ev=>{
+      st.context=ev.target.value;
+      updateGameView(d,a,b,id);
+      saveState();
+    });
+    box.appendChild(d);
+    renderedGames.push({div:d, a, b, id});
+    updateGameView(d,a,b,id);
+  });
+}
+
+function updateAllGames(){
+  renderedGames.forEach(g => updateGameView(g.div, g.a, g.b, g.id));
+}
+
+function updateGameView(div,a,b,id){
+  const st=getSt(id);
+  const r=calcGame(a,b,st);
+  const dA=normDeflator(st.defA), dB=normDeflator(st.defB);
+  const badges=[];
+  if (r.fonte === "odds") badges.push('<span class="badge odds">via odds</span>');
+  if (dA !== 100) badges.push(`<span class="badge defl">${a} ${dA}%</span>`);
+  if (dB !== 100) badges.push(`<span class="badge defl">${b} ${dB}%</span>`);
+  if (st.context !== "normal") badges.push(`<span class="badge context">${contextLabel(st.context)}</span>`);
+
+  const risk=div.querySelector(".risk");
+  risk.className=`risk ${r.risk.cls}`;
+  risk.textContent=`Risco ${r.risk.label}`;
+  div.querySelector(".badges").innerHTML=badges.join(" ");
+
+  div.querySelector(".team-a-elo").textContent=eloText(ELO[a], r.elo.adjustedA);
+  div.querySelector(".team-b-elo").textContent=eloText(ELO[b], r.elo.adjustedB);
+
+  const score=div.querySelector(".score");
+  score.textContent=scoreText(r.safe);
+  score.className="score "+(r.fonte==="odds"?"odds":"");
+  div.querySelector(".source-note").textContent=r.fonte==="odds" ? "Palpite principal via odds" : "Palpite principal via Elo";
+
+  div.querySelector(".pick-safe").textContent=scoreText(r.safe);
+  div.querySelector(".pick-conservative").textContent=scoreText(r.conservative);
+  div.querySelector(".pick-aggressive").textContent=scoreText(r.aggressive);
+
+  div.querySelector(".prob-home").style.width=(r.main.probs.home*100).toFixed(1)+"%";
+  div.querySelector(".prob-draw").style.width=(r.main.probs.draw*100).toFixed(1)+"%";
+  div.querySelector(".prob-away").style.width=(r.main.probs.away*100).toFixed(1)+"%";
+  div.querySelector(".plegend").textContent=
+    `${probLine(a,b,r.main.probs)} · pts esperados ${r.safe.ev.toFixed(2)}`;
+
+  const oddsLine=div.querySelector(".prob-odds");
+  const eloLine=div.querySelector(".prob-elo");
+  if (r.fonte === "odds") {
+    oddsLine.style.display="";
+    oddsLine.textContent=`Odds: ${probLine(a,b,r.oddsProbs)}`;
+    eloLine.textContent=`Elo: ${probLine(a,b,r.elo.probs)}`;
+  } else {
+    oddsLine.style.display="none";
+    eloLine.textContent=`Elo: ${probLine(a,b,r.elo.probs)}`;
+  }
+
+  const alerts=[];
+  if (r.oddsComparison?.hasAlert) {
+    alerts.push(`Alerta: mercado discorda do Elo (diferença máxima de ${pp(r.oddsComparison.maxDiff)}).`);
+  }
+  if (r.elo.context.alert) alerts.push(`Contexto: ${r.elo.context.alert}`);
+  if (r.risk.cls === "high") alerts.push("Jogo de alto risco: trate o placar exato com cautela.");
+  const alertBox=div.querySelector(".alerts");
+  alertBox.className="alerts"+(alerts.length?" on":"");
+  alertBox.innerHTML=alerts.join("<br>");
+}
+
+function renderElos(){
+  const g=$("eloGrid");
+  g.innerHTML="";
+  for(const name of Object.keys(ELO).sort((a,b)=>a.localeCompare(b))){
+    const l=document.createElement("label");
+    l.innerHTML=`<span>${name}</span>`;
+    const inp=document.createElement("input");
+    inp.type="number";
+    inp.value=ELO[name];
+    inp.oninput=()=>{ELO[name]=+inp.value||0; updateAllGames(); saveState();};
+    l.appendChild(inp);
+    g.appendChild(l);
+  }
+}
+
+const STORAGE_KEY = "bolao-copa-2026-v3";
+const PARAM_IDS = ["pE","pS","pV","pH","pT"];
+
+function saveState(){
+  const params = {};
+  PARAM_IDS.forEach(id => params[id] = $(id).value);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({params, elo:ELO, games:gameState}));
+  } catch (e) { /* armazenamento indisponível: segue sem persistir */ }
+}
+
+function loadState(){
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) {}
+  if (!data) return;
+  if (data.params) PARAM_IDS.forEach(id => { if (data.params[id] != null) $(id).value = data.params[id]; });
+  if (data.elo) for (const name of Object.keys(ELO)) {
+    const v = +data.elo[name];
+    if (Number.isFinite(v) && v > 0) ELO[name] = v;
+  }
+  if (data.games) for (const id of Object.keys(data.games)) {
+    gameState[id] = {...DEFAULT_GAME, ...data.games[id]};
+  }
+}
+
+$("resetAll").addEventListener("click",()=>{
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  location.reload();
+});
+
+PARAM_IDS.forEach(id=>$(id).addEventListener("input",()=>{updateAllGames(); saveState();}));
+loadState();
+renderTabs();
+renderElos();
+renderGames();
+</script>
+</body>
+</html>
