@@ -52,7 +52,20 @@ const fitProbs = wdl(matrix(fit.la, fit.lb));
 check('fit das odds com erro pequeno', Math.abs(fitProbs.home - mkt.home) < 0.03,
   { fit: fitProbs, mkt });
 
-// 11. Persistência: saveState/loadState round-trip
+// 11. Empate competitivo: empate a <= 12 p.p. do favorito
+check('gap de exatamente 12 p.p. sinaliza', isCompetitiveDraw({home:0.40, draw:0.28, away:0.32}) === true);
+check('gap maior nao sinaliza', isCompetitiveDraw({home:0.45, draw:0.25, away:0.30}) === false);
+check('empate modal sinaliza', isCompetitiveDraw({home:0.33, draw:0.35, away:0.32}) === true);
+const rDraw = calcGame('Gana', 'Panamá', stNormal);
+check('jogo parelho via Elo sinaliza', rDraw.competitiveDraw === true, rDraw.main.probs);
+check('conservador vira 1x1 no selo', rDraw.conservative.x === 1 && rDraw.conservative.y === 1, rDraw.conservative);
+const rUneven = calcGame('Espanha', 'Cabo Verde', stNormal);
+check('conservador sem selo segue o favorito', rUneven.conservative.x > rUneven.conservative.y, rUneven.conservative);
+check('jogo desigual nao sinaliza', calcGame('Espanha', 'Cabo Verde', stNormal).competitiveDraw === false);
+const stOddsDraw = { defA: 100, defB: 100, o1: 2.9, oX: 3.0, o2: 2.9, context: 'normal' };
+check('jogo parelho via odds sinaliza', calcGame('Gana', 'Panamá', stOddsDraw).competitiveDraw === true);
+
+// 12. Persistência: saveState/loadState round-trip
 let stored = null;
 global.localStorage = {
   getItem: () => stored,

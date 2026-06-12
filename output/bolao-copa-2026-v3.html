@@ -60,6 +60,7 @@ input:focus,select:focus,button:focus,details summary:focus{outline:2px solid va
 .badge.odds{background:var(--blue);color:#0B1F14}
 .badge.defl{background:var(--red);color:var(--chalk)}
 .badge.context{background:rgba(244,242,233,.12);color:var(--soft);border:1px solid var(--line)}
+.badge.draw{background:#6FA383;color:#0B1F14}
 .risk.low{background:rgba(103,197,135,.18);color:#BCE8C9;border:1px solid rgba(103,197,135,.45)}
 .risk.medium{background:rgba(216,167,45,.18);color:#F1D68A;border:1px solid rgba(216,167,45,.45)}
 .risk.high{background:rgba(217,79,48,.18);color:#F7B4A3;border:1px solid rgba(217,79,48,.5)}
@@ -112,7 +113,8 @@ details.cfg summary{cursor:pointer;font-size:13px;color:var(--soft);padding:4px 
     Barra: <span style="color:var(--gold)">■</span> vitória mandante · <span style="color:#6FA383">■</span> empate · <span style="color:var(--red)">■</span> vitória visitante.<br>
     <b>Deflator</b>: 100 = força total. Cada ponto abaixo de 100 reduz 20 pontos Elo só naquele jogo, em vez de multiplicar o Elo inteiro. Faixa válida: 80–100 (valores fora disso são ignorados).<br>
     <b>Odds</b>: cole as cotações decimais (1 / X / 2). Quando preenchidas, o palpite principal vem do mercado, sem a margem da casa, e o Elo continua aparecendo para comparação.<br>
-    <b>Use deflator com parcimônia.</b> Se a notícia já é pública, as odds provavelmente já capturaram melhor esse efeito.
+    <b>Use deflator com parcimônia.</b> Se a notícia já é pública, as odds provavelmente já capturaram melhor esse efeito.<br>
+    <b>Empate competitivo</b>: selo verde quando a probabilidade de empate fica a até 12 p.p. da do favorito. Cada rodada da fase de grupos costuma ter ~5 empates em 24 jogos — esses são os confrontos onde cravar 1 x 1 mais compensa, e neles o palpite conservador vira 1 x 1.
     <div style="margin-top:10px;color:var(--soft)">Como usar:</div>
     <ol class="help-list">
       <li>Use o palpite seguro como padrão.</li>
@@ -293,6 +295,13 @@ function compareEloVsOdds(probElo, probOdds) {
   return {maxDiff, hasAlert:maxDiff >= 0.10};
 }
 
+// Empate competitivo: empate a até 12 p.p. do favorito (ou já sendo o resultado
+// mais provável). Com o Elo padrão equivale a uma diferença ajustada de ~30 pontos.
+const COMPETITIVE_DRAW_GAP = 0.12;
+function isCompetitiveDraw(probs) {
+  return Math.max(probs.home, probs.away) - probs.draw <= COMPETITIVE_DRAW_GAP;
+}
+
 function riskLevel(probs, oddsComparison, context) {
   const favorite = Math.max(probs.home, probs.draw, probs.away);
   let index = favorite >= 0.65 ? 0 : favorite >= 0.50 ? 1 : 2;
@@ -369,8 +378,9 @@ function aggressivePick(M, favSign, safePick, probs) {
 }
 
 function conservativePick(probs) {
+  // Cobre também o empate como resultado modal (gap negativo).
+  if (isCompetitiveDraw(probs)) return {x:1, y:1};
   const favorite = Math.max(probs.home, probs.draw, probs.away);
-  if (probs.draw === favorite) return {x:1, y:1};
   if (probs.home === favorite) return favorite >= 0.60 ? {x:2, y:0} : {x:1, y:0};
   return favorite >= 0.60 ? {x:0, y:2} : {x:0, y:1};
 }
@@ -396,7 +406,8 @@ function calcGame(a,b,st){
   const conservative = conservativePick(main.probs);
   const aggressive = aggressivePick(main.M, favoriteSign(main.probs), safe, main.probs);
   const risk = riskLevel(main.probs, oddsComparison, st.context);
-  return {fonte, elo, oddsProbs, oddsComparison, main, safe, conservative, aggressive, risk};
+  const competitiveDraw = isCompetitiveDraw(main.probs);
+  return {fonte, elo, oddsProbs, oddsComparison, main, safe, conservative, aggressive, risk, competitiveDraw};
 }
 
 function scoreText(pick){ return `${pick.x} × ${pick.y}`; }
@@ -511,6 +522,7 @@ function updateGameView(div,a,b,id){
   if (dA !== 100) badges.push(`<span class="badge defl">${a} ${dA}%</span>`);
   if (dB !== 100) badges.push(`<span class="badge defl">${b} ${dB}%</span>`);
   if (st.context !== "normal") badges.push(`<span class="badge context">${contextLabel(st.context)}</span>`);
+  if (r.competitiveDraw) badges.push('<span class="badge draw">Empate competitivo</span>');
 
   const risk=div.querySelector(".risk");
   risk.className=`risk ${r.risk.cls}`;
@@ -551,6 +563,10 @@ function updateGameView(div,a,b,id){
     alerts.push(`Alerta: mercado discorda do Elo (diferença máxima de ${pp(r.oddsComparison.maxDiff)}).`);
   }
   if (r.elo.context.alert) alerts.push(`Contexto: ${r.elo.context.alert}`);
+  if (r.competitiveDraw) {
+    const fav = Math.max(r.main.probs.home, r.main.probs.away);
+    alerts.push(`Empate competitivo: empate ${pct(r.main.probs.draw)} vs favorito ${pct(fav)} — palpite conservador ajustado para 1 x 1.`);
+  }
   if (r.risk.cls === "high") alerts.push("Jogo de alto risco: trate o placar exato com cautela.");
   const alertBox=div.querySelector(".alerts");
   alertBox.className="alerts"+(alerts.length?" on":"");

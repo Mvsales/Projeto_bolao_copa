@@ -25,6 +25,7 @@ A partir da matriz de placares e da pontuação do bolão (padrão 10/7/5: placa
 - **Contexto do jogo** (3ª rodada): time já classificado, precisa vencer, jogo morto, escalação incerta — ajusta Elo e gols esperados do confronto;
 - **Comparação Elo × Odds** com alerta quando o mercado diverge do modelo em 10+ pontos percentuais;
 - **Selo de risco** (baixo / médio / alto) por jogo, conforme o favoritismo e as divergências;
+- **Selo de empate competitivo** quando a probabilidade de empate fica a até 12 p.p. da do favorito — historicamente cada rodada da fase de grupos tem ~20% de empates, e esses são os jogos onde cravar 1×1 mais compensa; nesses jogos o palpite conservador vira 1×1;
 - **Persistência em localStorage**: parâmetros, Elos editados, odds, deflatores e contextos sobrevivem ao fechar o navegador (botão "Limpar ajustes salvos" no rodapé);
 - Pontuação do bolão, mando e total de gols esperados configuráveis.
 
@@ -48,7 +49,7 @@ Requer Node.js (qualquer versão recente):
 node tests/run.js
 ```
 
-Cobre o tratamento do deflator, a massa de probabilidade da matriz de Poisson, os caminhos Elo e odds, ajustes de contexto, classificação de risco, o ajuste de lambdas às odds e o round-trip do localStorage.
+Cobre o tratamento do deflator, a massa de probabilidade da matriz de Poisson, os caminhos Elo e odds, ajustes de contexto, classificação de risco, o destaque de empate competitivo, o ajuste de lambdas às odds e o round-trip do localStorage.
 
 ## Dicas de uso
 
