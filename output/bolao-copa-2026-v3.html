@@ -307,7 +307,7 @@ function compareEloVsOdds(probElo, probOdds) {
 }
 
 // Empate competitivo: empate a até 12 p.p. do favorito (ou já sendo o resultado
-// mais provável). Com o Elo padrão equivale a uma diferença ajustada de ~30 pontos.
+// mais provável). Com o Elo padrão (ELO_SENS=1200) equivale a ~40 pontos de diferença.
 const COMPETITIVE_DRAW_GAP = 0.12;
 function isCompetitiveDraw(probs) {
   return Math.max(probs.home, probs.away) - probs.draw <= COMPETITIVE_DRAW_GAP;
@@ -349,6 +349,10 @@ function modelFromLambdas(la, lb, pE, pS, pV) {
   return {M, probs:wdl(M), best:bestPick(M,pE,pS,pV)};
 }
 
+// Sensibilidade Elo->gols: quanto a diferença de Elo distorce os gols esperados.
+// Calibrado contra as odds da 2ª rodada (10 jogos): D=1200 aproxima o modelo do
+// mercado (divergência média 7,2 -> 4,6 p.p.) — o /850 anterior inflava o favorito.
+const ELO_SENS = 1200;
 function eloModel(a,b,st) {
   const {pE,pS,pV,pH,T} = params();
   const context = contextAdjustment(st.context);
@@ -356,8 +360,8 @@ function eloModel(a,b,st) {
   const ea = adjustedElo(a, st.defA, HOSTS.has(a)?pH:0, context.eloDeltaA);
   const eb = adjustedElo(b, st.defB, HOSTS.has(b)?pH:0, context.eloDeltaB);
   const dr = ea - eb;
-  const la = cl(totalGoals/2*Math.pow(10,dr/850));
-  const lb = cl(totalGoals/2*Math.pow(10,-dr/850));
+  const la = cl(totalGoals/2*Math.pow(10,dr/ELO_SENS));
+  const lb = cl(totalGoals/2*Math.pow(10,-dr/ELO_SENS));
   return {...modelFromLambdas(la,lb,pE,pS,pV), la, lb, adjustedA:ea, adjustedB:eb, context, totalGoals};
 }
 
