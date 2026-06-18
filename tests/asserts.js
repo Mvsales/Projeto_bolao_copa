@@ -56,7 +56,7 @@ check('fit das odds com erro pequeno', Math.abs(fitProbs.home - mkt.home) < 0.03
 check('gap de exatamente 12 p.p. sinaliza', isCompetitiveDraw({home:0.40, draw:0.28, away:0.32}) === true);
 check('gap maior nao sinaliza', isCompetitiveDraw({home:0.45, draw:0.25, away:0.30}) === false);
 check('empate modal sinaliza', isCompetitiveDraw({home:0.33, draw:0.35, away:0.32}) === true);
-const rDraw = calcGame('Gana', 'Panamá', stNormal);
+const rDraw = calcGame('Coreia do Sul', 'Austrália', stNormal);
 check('jogo parelho via Elo sinaliza', rDraw.competitiveDraw === true, rDraw.main.probs);
 check('conservador vira 1x1 no selo', rDraw.conservative.x === 1 && rDraw.conservative.y === 1, rDraw.conservative);
 const rUneven = calcGame('Espanha', 'Cabo Verde', stNormal);

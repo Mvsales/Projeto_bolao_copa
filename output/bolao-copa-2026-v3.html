@@ -129,19 +129,21 @@ details.cfg summary{cursor:pointer;font-size:13px;color:var(--soft);padding:4px 
 </div>
 
 <script>
+// Ratings atualizados após a 1ª rodada (método eloratings.net: K=60, G por saldo,
+// mando 100 só p/ anfitriões). Valores base anteriores ao lado em comentário.
 const ELO = {
-"México":1850,"Coreia do Sul":1780,"África do Sul":1615,"R. Tcheca":1760,
-"Canadá":1780,"Bósnia":1645,"Qatar":1555,"Suíça":1840,
-"Brasil":2030,"Marrocos":1895,"Escócia":1700,"Haiti":1480,
-"EUA":1840,"Paraguai":1740,"Austrália":1750,"Turquia":1850,
-"Alemanha":1975,"Curaçao":1470,"C. do Marfim":1730,"Equador":1875,
-"Holanda":2000,"Japão":1885,"Suécia":1750,"Tunísia":1690,
-"Bélgica":1900,"Egito":1685,"Irã":1790,"N. Zelândia":1505,
-"Espanha":2170,"Cabo Verde":1545,"A. Saudita":1620,"Uruguai":1940,
-"França":2070,"Senegal":1800,"Iraque":1615,"Noruega":1855,
-"Argentina":2150,"Argélia":1745,"Áustria":1820,"Jordânia":1550,
-"Portugal":2010,"RD. Congo":1610,"Uzbequistão":1635,"Colômbia":1950,
-"Inglaterra":2050,"Croácia":1925,"Gana":1655,"Panamá":1640};
+"México":1861,"Coreia do Sul":1808,"África do Sul":1604,"R. Tcheca":1732,
+"Canadá":1762,"Bósnia":1663,"Qatar":1575,"Suíça":1820,
+"Brasil":2019,"Marrocos":1906,"Escócia":1713,"Haiti":1467,
+"EUA":1865,"Paraguai":1715,"Austrália":1808,"Turquia":1792,
+"Alemanha":1982,"Curaçao":1463,"C. do Marfim":1772,"Equador":1833,
+"Holanda":1990,"Japão":1895,"Suécia":1797,"Tunísia":1643,
+"Bélgica":1883,"Egito":1702,"Irã":1770,"N. Zelândia":1525,
+"Espanha":2142,"Cabo Verde":1573,"A. Saudita":1642,"Uruguai":1918,
+"França":2086,"Senegal":1784,"Iraque":1594,"Noruega":1876,
+"Argentina":2159,"Argélia":1736,"Áustria":1836,"Jordânia":1534,
+"Portugal":1985,"RD. Congo":1635,"Uzbequistão":1622,"Colômbia":1963,
+"Inglaterra":2079,"Croácia":1896,"Gana":1684,"Panamá":1611};
 const HOSTS = new Set(["México","EUA","Canadá"]);
 const GRUPOS = {
 A:[["11.jun","México","África do Sul"],["11.jun","Coreia do Sul","R. Tcheca"],["18.jun","R. Tcheca","África do Sul"],["18.jun","México","Coreia do Sul"],["24.jun","R. Tcheca","México"],["24.jun","África do Sul","Coreia do Sul"]],
