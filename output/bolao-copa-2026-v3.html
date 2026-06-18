@@ -176,6 +176,15 @@ const DEFAULT_GAME = {defA:100, defB:100, o1:"", oX:"", o2:"", context:"normal"}
 const gid = (g,i) => g+"-"+i;
 const getSt = id => gameState[id] || (gameState[id] = {...DEFAULT_GAME});
 
+// Odds 1X2 (decimal) pré-carregadas dos jogos parelhos da 2ª rodada (fonte: SofaScore).
+// Semeadas antes do loadState() — qualquer ajuste salvo pelo usuário tem prioridade.
+const PRESET_ODDS = {
+  "A-2": ["1.91","3.50","4.55"], // R. Tcheca x África do Sul
+  "A-3": ["2.15","3.25","3.90"], // México x Coreia do Sul
+  "D-2": ["2.05","3.45","4.00"], // Turquia x Paraguai
+  "D-3": ["1.67","4.15","5.30"], // EUA x Austrália
+};
+
 let grupoAtivo = "A";
 let renderedGames = []; // jogos do grupo ativo, para atualização em-place
 const MAXG = 10;   // teto de gols da matriz Poisson
@@ -621,6 +630,7 @@ $("resetAll").addEventListener("click",()=>{
 });
 
 PARAM_IDS.forEach(id=>$(id).addEventListener("input",()=>{updateAllGames(); saveState();}));
+for (const [id, [o1, oX, o2]] of Object.entries(PRESET_ODDS)) gameState[id] = {...DEFAULT_GAME, o1, oX, o2};
 loadState();
 renderTabs();
 renderElos();
