@@ -1,0 +1,6 @@
+# Resultados gerados pelo parser da SofaScore (dados de cada rodada, não versionados)
+tests/results-r*.json
+# Arquivos temporários/locais
+tests/.*.json
+.pw-tmp/
+node_modules/

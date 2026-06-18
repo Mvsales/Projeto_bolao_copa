@@ -26,8 +26,14 @@ const R2 = [
   ['Inglaterra','Gana',null,null],         ['Panamá','Croácia',null,null],
 ];
 
+// Preenche automaticamente a partir de tests/results-r2.json (gerado por sofascore-parse.js), se existir.
+try {
+  const res = JSON.parse(fs.readFileSync(path.join(__dirname, 'results-r2.json'), 'utf8'));
+  for (const r of R2) { const k = res[`${r[0]}|${r[1]}`]; if (k) { r[2] = k[0]; r[3] = k[1]; } }
+} catch {}
+
 if (R2.some(r => r[2] === null || r[3] === null)) {
-  console.error('Preencha os placares (golsCasa/golsFora) em R2 antes de atualizar o Elo.');
+  console.error('Sem placares: preencha o R2 ou gere tests/results-r2.json com:\n  node tests/sofascore-parse.js <arquivo-da-rodada.json>');
   process.exit(1);
 }
 
